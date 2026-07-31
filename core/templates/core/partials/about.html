@@ -1,0 +1,59 @@
+{% load static %}
+<section id="about" class="about-section py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <img src="{% static 'core/images/about.jpg' %}" alt="About Nana Lulu" class="img-fluid rounded-4 shadow-lg object-fit-cover" style="height: 430px; width: 100%;">
+            </div>
+            <div class="col-lg-6">
+                <span class="section-tag">Our Story</span>
+                <h2 class="section-title mt-3">Crafted for those who appreciate exceptional taste.</h2>
+                <p class="lead text-muted mb-4">
+                    Nana Lulu brings together premium spirits, polished service, and a warm sense of hospitality in one unforgettable experience.
+                </p>
+                <p class="text-muted mb-4">
+                    From carefully selected bottles to thoughtful recommendations, every detail is designed to make your shopping experience feel luxurious, personal, and effortless.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="feature-pill">Premium Selection</div>
+                    <div class="feature-pill">Fast Delivery</div>
+                    <div class="feature-pill">Trusted Service</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="cta-box text-center">
+
+                    <span class="section-tag">Ready to Order?</span>
+
+                    <h2 class="display-5 fw-bold mt-3">
+                        Premium Drinks. Fast Delivery. Exceptional Service.
+                    </h2>
+
+                    <p class="lead text-light opacity-75 mx-auto mt-3" style="max-width:700px;">
+                        Browse our carefully selected collection of wines, spirits,
+                        beers, and premium beverages. Order today and have your
+                        favorite drinks delivered straight to your doorstep.
+                    </p>
+
+                    <div class="mt-5">
+                        <a href="{% url 'shop' %}" class="btn btn-danger btn-lg px-5 me-3">
+                            Shop Now
+                        </a>
+
+                        <a href="{% url 'contact' %}" class="btn btn-outline-light btn-lg px-5">
+                            Contact Us
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

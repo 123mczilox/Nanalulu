@@ -1,0 +1,125 @@
+
+{% load static %}
+<section id="featured-products" class="featured-products-section py-5">
+    <div class="container">
+
+        <div class="text-center mb-5">
+            <span class="section-tag">Bestsellers</span>
+            <h2 class="section-title mt-3">Featured Products</h2>
+            <p class="text-muted mx-auto" style="max-width:700px;">
+                A few favorites chosen for their quality, character, and everyday appeal.
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            {% for product in products %}
+            <div class="col-lg-3 col-md-6">
+
+                <div class="card h-100 border-0 shadow-sm product-card">
+
+                    <!-- Product Image -->
+                    <div class="position-relative overflow-hidden">
+
+                        {% if product.images.first %}
+                            <img
+                                src="{{ product.images.first.image.url }}"
+                                alt="{{ product.name }}"
+                                class="card-img-top product-image">
+                                
+                        {% else %}
+                            <img
+                                src="{% static 'core/images/default_product.jpg' %}"
+                                alt="{{ product.name }}"
+                                class="card-img-top product-image">
+                        {% endif %}
+
+                        {% if product.is_featured %}
+                        <span class="badge bg-danger position-absolute top-0 end-0 m-3">
+                            Featured
+                        </span>
+                        {% endif %}
+
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body p-4 d-flex flex-column">
+
+                        {% with variant=product.variants.first %}
+                        {% if variant.stock_quantity > 0 %}
+    <span class="text-success small my-2 d-flex text-end align-items-end">
+        <i class="px-1 bi bi-check-circle-fill"></i> In Stock
+    </span>
+{% else %}
+    <span class="text-danger small">
+        <i class="bi bi-x-circle-fill"></i> Out of Stock
+    </span>
+{% endif %}
+
+                        <!-- Brand -->
+                        <small class="text-uppercase text-muted">
+                            {{ product.brand.name }}
+                        </small>
+
+                        <!-- Product Name -->
+                        <h5 class="fw-bold mt-2">
+                            {{ product.name }}
+                        </h5>
+
+                        <!-- Category & Volume -->
+                        <p class="small text-secondary mb-2">
+                            {{ product.category.name }}
+
+                            {% if variant %}
+                                • {{ variant.volume }}
+                            {% endif %}
+                        </p>
+
+                        <!-- Description -->
+                        <p class="text-muted small mb-4">
+                            {{ product.description|truncatewords:15|default:"Premium selection crafted for discerning taste." }}
+                        </p>
+
+                        <!-- Price & Button -->
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+
+                            {% if variant %}
+                                <span class="fw-bold text-danger fs-5">
+                                    KSh {{ variant.price }}
+                                </span>
+                            {% else %}
+                                <span class="fw-bold text-danger">
+                                    Price on request
+                                </span>
+                            {% endif %}
+                            
+
+                            <a href="#" class="btn btn-outline-danger btn-sm px-3">
+                                View Details<i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+
+                        </div>
+
+                        {% endwith %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% empty %}
+
+            <div class="col-12 text-center py-5">
+                <h5>No featured products yet.</h5>
+                <p class="text-muted">
+                    Add products in the admin panel and mark them as featured.
+                </p>
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+</section>
