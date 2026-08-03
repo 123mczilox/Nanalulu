@@ -1,0 +1,212 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="py-5">
+    <div class="container">
+
+        <!-- Page Header -->
+        <div class="text-center mb-5">
+            <h1 class="fw-bold">Shop Our Collection</h1>
+            <p class="lead">
+                Explore our wide range of premium drinks.
+            </p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="row mb-5">
+            <div class="col-lg-6 mx-auto">
+                <form method="GET">
+
+                    <!-- Keep category selected while searching -->
+                    {% if request.GET.category %}
+                    <input type="hidden"
+                           name="category"
+                           value="{{ request.GET.category }}">
+                    {% endif %}
+
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control form-control-lg"
+                        placeholder="Search drinks..."
+                        value="{{ request.GET.q }}">
+
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+
+            <!-- ================= Sidebar ================= -->
+            <div class="col-lg-3">
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body">
+
+                        <h5 class="fw-bold mb-3">
+                            Categories
+                        </h5>
+
+                        <a href="{% url 'shop' %}"
+                           class="d-block text-decoration-none mb-2">
+                            All Products
+                        </a>
+
+                        {% for category in categories %}
+
+                        <a href="?category={{ category.id }}"
+                           class="d-block text-decoration-none mb-2">
+
+                            {{ category.name }}
+
+                        </a>
+
+                        {% endfor %}
+
+                    </div>
+                </div>
+
+                <!-- Brand Filter (Coming Next) -->
+                <div class="card shadow-sm border-0">
+
+                    <div class="card-body">
+
+                        <h5 class="fw-bold mb-3">
+                            Brands
+                        </h5>
+
+                        <p class="text-muted small mb-0">
+                            Coming soon...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ================= Products ================= -->
+            <div class="col-lg-9">
+
+                <div class="row g-4">
+
+                    {% for product in products %}
+
+                    <div class="col-lg-4 col-md-6">
+
+                        <div class="card h-100 shadow-sm border-0 product-card">
+
+                            <!-- Image -->
+                            <div class="position-relative overflow-hidden">
+
+                                {% if product.images.first %}
+
+                                <img
+                                    src="{{ product.images.first.image.url }}"
+                                    class="card-img-top product-image"
+                                    alt="{{ product.name }}">
+
+                                {% else %}
+
+                                <img
+                                    src="{% static 'core/images/default_product.jpg' %}"
+                                    class="card-img-top product-image"
+                                    alt="{{ product.name }}">
+
+                                {% endif %}
+
+                                {% if product.is_featured %}
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-2">
+                                    Featured
+                                </span>
+                                {% endif %}
+
+                            </div>
+
+                            <!-- Body -->
+                            <div class="card-body d-flex flex-column">
+
+                                {% with variant=product.variants.first %}
+
+                                <small class="text-uppercase text-muted">
+                                    {{ product.brand.name }}
+                                </small>
+
+                                <h5 class="fw-bold mt-2">
+                                    {{ product.name }}
+                                </h5>
+
+                                <p class="text-muted small">
+                                    {{ product.description|truncatewords:12 }}
+                                </p>
+
+                                <div class="mt-auto">
+
+                                    <div class="d-flex justify-content-between align-items-center">
+
+                                        <div>
+
+                                            {% if variant %}
+
+                                            <span class="fw-bold text-danger">
+                                                KSh {{ variant.price }}
+                                            </span>
+
+                                            <br>
+
+                                            <small class="text-muted">
+                                                {{ variant.volume }}
+                                            </small>
+
+                                            {% else %}
+
+                                            <span class="fw-bold text-danger">
+                                                Price on request
+                                            </span>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                        <a href="{% url 'product_detail' product.slug %}"
+                                           class="btn btn-danger btn-sm">
+
+                                            View
+
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                                {% endwith %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {% empty %}
+
+                    <div class="col-12 text-center py-5">
+
+                        <h4>No products found.</h4>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

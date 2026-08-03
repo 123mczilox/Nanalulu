@@ -1,0 +1,178 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="row g-5">
+
+            <!-- LEFT SIDE -->
+            <div class="col-lg-6">
+
+                {% if product.images.first %}
+                    <img src="{{ product.images.first.image.url }}"
+                         class="img-fluid rounded shadow"
+                         alt="{{ product.name }}">
+                {% else %}
+                    <img src="{% static 'core/images/default_product.jpg' %}"
+                         class="img-fluid rounded shadow"
+                         alt="{{ product.name }}">
+                {% endif %}
+
+            </div>
+
+
+            <!-- RIGHT SIDE -->
+            <div class="col-lg-6">
+
+                <small class="text-uppercase text-danger fw-semibold">
+                    {{ product.brand.name }}
+                </small>
+
+                <h1 class="fw-bold mt-2">
+                    {{ product.name }}
+                </h1>
+
+                <p class="text-muted">
+                    {{ product.description }}
+                </p>
+
+                <hr>
+
+                <!-- Price -->
+                <h3 class="text-danger mb-4" id="product-price">
+
+                    {% with variant=product.variants.first %}
+                        {% if variant %}
+                            KSh {{ variant.price }}
+                        {% endif %}
+                    {% endwith %}
+
+                </h3>
+
+                <!-- Volume -->
+                <div class="mb-4">
+
+                    <h5>Select Volume</h5>
+
+                    {% for variant in product.variants.all %}
+
+                        <button
+                        type="button"
+                         class="btn btn-outline-dark me-2 mb-2 variant-btn"
+                         data-price="{{ variant.price }}"
+                         data-volume="{{ variant.volume }}"
+                         data-id="{{ variant.id }}">
+
+                            {{ variant.volume }}
+
+                        </button>
+
+                    {% endfor %}
+
+                </div>
+
+                <!-- Quantity -->
+
+                <div class="mb-4">
+
+                    <h5>Quantity</h5>
+
+                    <input
+                        type="number"
+                        id="quantity"
+                        class="form-control"
+                        value="1"
+                        min="1"
+                        style="width:120px;">
+
+                </div>
+                <!-- total -->
+                 <div class="mt-4">
+
+    <h5>Total</h5>
+
+    <h3 class="text-success" id="total-price">
+        {% with variant=product.variants.first %}
+            {% if variant %}
+                KSh {{ variant.price }}
+            {% endif %}
+        {% endwith %}
+    </h3>
+
+</div>
+
+                <!-- Add to cart -->
+
+                <button class="btn btn-danger btn-lg">
+
+                    Add To Cart
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+<script>
+const buttons = document.querySelectorAll(".variant-btn");
+const price = document.getElementById("product-price");
+const total = document.getElementById("total-price");
+const quantity = document.getElementById("quantity");
+
+let currentPrice = buttons.length
+    ? parseFloat(buttons[0].dataset.price)
+    : 0;
+
+// Update total
+function updateTotal() {
+    const qty = parseInt(quantity.value) || 1;
+    total.innerHTML = "KSh " + (currentPrice * qty).toLocaleString();
+}
+
+// Handle volume selection
+buttons.forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        // Remove active style from all buttons
+        buttons.forEach(btn => {
+            btn.classList.remove("btn-danger");
+            btn.classList.add("btn-outline-dark");
+        });
+
+        // Highlight selected button
+        this.classList.remove("btn-outline-dark");
+        this.classList.add("btn-danger");
+
+        // Update current price
+        currentPrice = parseFloat(this.dataset.price);
+
+        // Update displayed unit price
+        price.innerHTML = "KSh " + currentPrice.toLocaleString();
+
+        // Update total
+        updateTotal();
+
+    });
+
+});
+
+// Update total when quantity changes
+quantity.addEventListener("input", updateTotal);
+
+// Highlight first variant on page load
+if (buttons.length) {
+    buttons[0].classList.remove("btn-outline-dark");
+    buttons[0].classList.add("btn-danger");
+}
+
+// Calculate initial total
+updateTotal();
+</script>
+
+{% endblock %}
