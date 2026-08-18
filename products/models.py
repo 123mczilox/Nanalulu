@@ -100,7 +100,8 @@ class ProductVariant(models.Model):
         if not self.sku:
             brand = self.product.brand.name[:3].upper()
             product = self.product.name[:3].upper()
-            volume = self.volume.replace('', '').upper()
+            # remove spaces from volume (e.g. "1 L" -> "1L") before uppercasing
+            volume = self.volume.replace(' ', '').upper()
             self.sku = f"{brand}-{product}-{volume}"
         super().save(*args, **kwargs)
 

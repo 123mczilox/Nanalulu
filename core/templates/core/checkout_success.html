@@ -1,0 +1,60 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Order Placed</h1>
+
+    <p class="lead">Thank you — your order <strong>{{ order.order_number }}</strong> has been created.</p>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Order Details</h5>
+            <p><strong>Recipient:</strong> {{ order.recipient_name }}</p>
+            <p><strong>Phone:</strong> {{ order.phone_number }}</p>
+            <p><strong>Delivery Address:</strong><br>{{ order.delivery_address }}</p>
+            <p><strong>Payment Method:</strong> {% if order.payment %}{{ order.payment.get_payment_method_display }}{% else %}N/A{% endif %}</p>
+            <p><strong>Payment Status:</strong> {% if order.payment %}{{ order.payment.status|capfirst }}{% else %}N/A{% endif %}</p>
+        </div>
+
+        <div class="col-md-6">
+            <h5>Items</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.variant.product.name }} ({{ item.variant.volume }})</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end">KSh {{ item.price }}</td>
+                            <td class="text-end">KSh {{ item.subtotal }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Total</th>
+                            <th class="text-end">KSh {{ order.total_amount }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if order.payment.status != 'successful' %}
+        <div class="alert alert-warning mt-4">
+            Payment status: <strong>{{ order.payment.status|capfirst }}</strong>. Payment integration not implemented yet.
+        </div>
+    {% endif %}
+
+    <a href="{% url 'shop' %}" class="btn btn-primary">Continue Shopping</a>
+</div>
+{% endblock %}

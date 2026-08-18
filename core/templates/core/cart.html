@@ -1,0 +1,352 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <!-- =========================
+         CART HEADER
+    ========================== -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h1 class="fw-bold">
+            Your Cart
+        </h1>
+
+        <a
+            href="/"
+            class="btn btn-outline-secondary"
+        >
+            Continue Shopping
+        </a>
+
+    </div>
+
+
+    <!-- =========================
+         MESSAGES
+    ========================== -->
+
+    {% if messages %}
+
+        {% for message in messages %}
+
+            <div
+                class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                role="alert"
+            >
+
+                {{ message }}
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                ></button>
+
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+
+    <!-- =========================
+         CART HAS ITEMS
+    ========================== -->
+
+    {% if items %}
+
+        <div class="row g-4">
+
+            <!-- =========================
+                 CART ITEMS
+            ========================== -->
+
+            <div class="col-lg-8">
+
+                {% for item in items %}
+
+                    <div class="card mb-3 shadow-sm">
+
+                        <div class="card-body">
+
+                            <div class="row align-items-center g-3">
+
+
+                                <!-- PRODUCT INFORMATION -->
+
+                                <div class="col-md-4">
+
+                                    <h5 class="mb-1">
+                                        {{ item.variant.product.name }}
+                                    </h5>
+
+                                    <p class="text-muted mb-1">
+                                        {{ item.variant.volume }}
+                                    </p>
+
+                                    <small class="text-muted">
+                                        SKU: {{ item.variant.sku }}
+                                    </small>
+
+                                </div>
+
+
+                                <!-- UNIT PRICE -->
+
+                                <div class="col-md-2">
+
+                                    <small class="text-muted d-block">
+                                        Price
+                                    </small>
+
+                                    <span>
+                                        KSh {{ item.variant.price }}
+                                    </span>
+
+                                </div>
+
+
+                                <!-- QUANTITY -->
+
+                                <div class="col-md-4">
+
+                                    <small class="text-muted d-block mb-1">
+                                        Quantity
+                                    </small>
+
+                                    <form
+                                        method="POST"
+                                        action="{% url 'orders:update_cart_item' item.id %}"
+                                        class="d-flex align-items-center gap-2"
+                                    >
+
+                                        {% csrf_token %}
+
+                                        <!-- DECREASE -->
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            onclick="decreaseQuantity(this)"
+                                        >
+                                            −
+                                        </button>
+
+
+                                        <!-- QUANTITY INPUT -->
+
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            value="{{ item.quantity }}"
+                                            min="1"
+                                            max="{{ item.variant.stock_quantity }}"
+                                            class="form-control text-center quantity-input"
+                                            style="width: 70px;"
+                                        >
+
+
+                                        <!-- INCREASE -->
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-secondary"
+                                            onclick="increaseQuantity(this)"
+                                        >
+                                            +
+                                        </button>
+
+
+                                        <!-- UPDATE -->
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-primary"
+                                        >
+                                            Update
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+
+                                <!-- TOTAL + REMOVE -->
+
+                                <div class="col-md-2 text-md-end">
+
+                                    <small class="text-muted d-block">
+                                        Total
+                                    </small>
+
+                                    <strong class="d-block mb-2">
+                                        KSh {{ item.total_price }}
+                                    </strong>
+
+
+                                    <!-- REMOVE -->
+
+                                    <form
+                                        method="POST"
+                                        action="{% url 'orders:remove_cart_item' item.id %}"
+                                    >
+
+                                        {% csrf_token %}
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-danger"
+                                        >
+                                            Remove
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =========================
+                 ORDER SUMMARY
+            ========================== -->
+
+            <div class="col-lg-4">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-body">
+
+                        <h4 class="fw-bold mb-4">
+                            Order Summary
+                        </h4>
+
+
+                        <!-- SUBTOTAL -->
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span>
+                                Subtotal
+                            </span>
+
+                            <strong>
+                                KSh {{ total }}
+                            </strong>
+
+                        </div>
+
+
+                        <hr>
+
+
+                        <!-- TOTAL -->
+
+                        <div class="d-flex justify-content-between mb-4">
+
+                            <span class="fw-bold">
+                                Total
+                            </span>
+
+                            <strong class="fs-5">
+                                KSh {{ total }}
+                            </strong>
+
+                        </div>
+
+
+                        <!-- CHECKOUT -->
+
+                        <a
+                            href="{% url 'orders:checkout' %}"
+                            class="btn btn-primary w-100"
+                        >
+                            Proceed to Checkout
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    <!-- =========================
+         EMPTY CART
+    ========================== -->
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <h3>
+                Your cart is empty
+            </h3>
+
+            <p class="text-muted">
+                You haven't added any products yet.
+            </p>
+
+            <a
+                href="/"
+                class="btn btn-primary"
+            >
+                Start Shopping
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- =========================
+     QUANTITY JAVASCRIPT
+========================== -->
+
+<script>
+
+function decreaseQuantity(button) {
+
+    const input = button.nextElementSibling;
+
+    let quantity = parseInt(input.value) || 1;
+
+    if (quantity > 1) {
+        input.value = quantity - 1;
+    }
+
+}
+
+
+function increaseQuantity(button) {
+
+    const input = button.previousElementSibling;
+
+    let quantity = parseInt(input.value) || 1;
+
+    const max = parseInt(input.max);
+
+    if (quantity < max) {
+        input.value = quantity + 1;
+    }
+
+}
+
+</script>
+
+{% endblock %}

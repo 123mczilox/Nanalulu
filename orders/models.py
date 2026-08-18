@@ -6,32 +6,68 @@ from products.models import ProductVariant
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name="cart")
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="cart",
+        null=True,
+        blank=True,
+    )
+
+    session_key = models.CharField(
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart {self.id}"
+        if self.user:
+            return f"{self.user.username}'s Cart"
+        return f"Guest Cart {self.id}"
 
     class Meta:
         verbose_name = "Cart"
         verbose_name_plural = "Carts"
+        ordering = ["-created_at"]
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
-    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
+    cart = models.ForeignKey(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.PROTECT,
+        related_name="cart_items",
+    )
+
     quantity = models.PositiveIntegerField(default=1)
 
-    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return f"{self.variant.product.name} x {self.quantity}"
+        return f"{self.variant.product.name} ({self.variant.volume}) x {self.quantity}"
+
     @property
     def total_price(self):
         return self.variant.price * self.quantity
 
+    class Meta:
+        verbose_name = "Cart Item"
+        verbose_name_plural = "Cart Items"
+        ordering = ["created_at"]
+
 
 class Order(models.Model):
+
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("confirmed", "Confirmed"),
@@ -40,69 +76,154 @@ class Order(models.Model):
         ("cancelled", "Cancelled"),
     ]
 
-    PAYMENT_STATUS =[
+    PAYMENT_STATUS_CHOICES = [
         ("pending", "Pending"),
         ("paid", "Paid"),
         ("failed", "Failed"),
         ("refunded", "Refunded"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
-    cart = models.OneToOneField(Cart, on_delete=models.SET_NULL, null=True, blank=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-    delivery_address = models.TextField(blank=True)
-    order_number = models.CharField(max_length=20, unique=True, blank=True)
-    phone_number = models.CharField(max_length=20, blank=True)
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default="pending")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
+
+    cart = models.OneToOneField(
+        Cart,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order",
+    )
+
+    order_number = models.CharField(
+        max_length=30,
+        unique=True,
+        blank=True,
+    )
+
+    total_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
+
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default="pending",
+    )
+
+    # Delivery information is stored directly on the order
+    # so old orders don't change when a customer edits their address.
+    recipient_name = models.CharField(
+        max_length=100,
+    )
+
+    phone_number = models.CharField(
+        max_length=20,
+    )
+
+    delivery_address = models.TextField()
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
         if not self.order_number:
             year = timezone.now().year
 
-            last_order = Order.objects.filter(
-                order_number__startswith=f"NNL-{year}"
-            ).order_by("-id").first()
+            last_order = (
+                Order.objects
+                .filter(order_number__startswith=f"NNL-{year}-")
+                .order_by("-id")
+                .first()
+            )
 
             if last_order:
-                last_number = int(last_order.order_number.split("-")[-1])
+                last_number = int(
+                    last_order.order_number.split("-")[-1]
+                )
                 next_number = last_number + 1
             else:
                 next_number = 1
 
-            self.order_number = f"NNL-{year}-{next_number:05d}"
+            self.order_number = (
+                f"NNL-{year}-{next_number:05d}"
+            )
 
         super().save(*args, **kwargs)
+
     def __str__(self):
         return self.order_number
+
     @property
     def calculate_total(self):
-        return sum(item.subtotal for item in self.items.all())
+        return sum(
+            item.subtotal
+            for item in self.items.all()
+        )
 
     class Meta:
         verbose_name = "Order"
         verbose_name_plural = "Orders"
+        ordering = ["-created_at"]
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.PROTECT,
+        related_name="order_items",
+    )
+
+    # IMPORTANT:
+    # This is the price at the time the order was placed.
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    quantity = models.PositiveIntegerField(
+        default=1,
+    )
+
+    subtotal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
 
     def save(self, *args, **kwargs):
         self.subtotal = self.price * self.quantity
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.variant.product.name} x {self.quantity}"
+        return (
+            f"{self.variant.product.name} "
+            f"({self.variant.volume}) x {self.quantity}"
+        )
 
     class Meta:
         verbose_name = "Order Item"
         verbose_name_plural = "Order Items"
         ordering = ["id"]
+
 
 class Payment(models.Model):
 
@@ -123,40 +244,45 @@ class Payment(models.Model):
     order = models.OneToOneField(
         Order,
         on_delete=models.CASCADE,
-        related_name="payment"
+        related_name="payment",
     )
 
     payment_method = models.CharField(
         max_length=20,
         choices=PAYMENT_METHOD_CHOICES,
-        default="mpesa"
+        default="mpesa",
     )
 
     transaction_id = models.CharField(
         max_length=100,
         unique=True,
         blank=True,
-        null=True
+        null=True,
     )
 
     amount = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
     )
 
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="pending"
+        default="pending",
     )
 
     paid_at = models.DateTimeField(
         blank=True,
-        null=True
+        null=True,
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
 
     def __str__(self):
         return f"{self.order.order_number} - {self.status}"
@@ -165,5 +291,3 @@ class Payment(models.Model):
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
         ordering = ["-created_at"]
-
-

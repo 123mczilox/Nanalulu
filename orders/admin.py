@@ -1,13 +1,28 @@
 from django.contrib import admin
 from .models import Cart, CartItem, Order, OrderItem, Payment
-# Register your models here.
+
+
+# =========================
+# CART
+# =========================
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "created_at", "updated_at")
-    search_fields = ("user__username",)
-    ordering = ("-created_at",)
-   
+    list_display = (
+        "id",
+        "user",
+        "created_at",
+        "updated_at",
+    )
+
+    search_fields = (
+        "user__username",
+    )
+
+    ordering = (
+        "-created_at",
+    )
+
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
@@ -20,17 +35,25 @@ class CartItemAdmin(admin.ModelAdmin):
 
     search_fields = (
         "variant__product__name",
+        "variant__sku",
     )
 
     list_filter = (
         "variant__product__brand",
     )
 
+
+# =========================
+# ORDER
+# =========================
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "order_number",
         "user",
+        "recipient_name",
+        "phone_number",
         "status",
         "payment_status",
         "total_amount",
@@ -45,6 +68,7 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = (
         "order_number",
         "user__username",
+        "recipient_name",
         "phone_number",
     )
 
@@ -54,7 +78,10 @@ class OrderAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
-    ordering = ("-created_at",)
+    ordering = (
+        "-created_at",
+    )
+
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
@@ -69,9 +96,17 @@ class OrderItemAdmin(admin.ModelAdmin):
     search_fields = (
         "order__order_number",
         "variant__product__name",
+        "variant__sku",
     )
 
-    ordering = ("order",)
+    ordering = (
+        "order",
+    )
+
+
+# =========================
+# PAYMENT
+# =========================
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
@@ -94,4 +129,6 @@ class PaymentAdmin(admin.ModelAdmin):
         "transaction_id",
     )
 
-    ordering = ("-created_at",)
+    ordering = (
+        "-created_at",
+    )

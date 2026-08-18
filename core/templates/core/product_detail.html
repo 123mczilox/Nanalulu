@@ -106,11 +106,13 @@
 
                 <!-- Add to cart -->
 
-                <button class="btn btn-danger btn-lg">
-
-                    Add To Cart
-
-                </button>
+                <form id="add-to-cart-form" method="POST" action="" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" id="form-quantity" value="1">
+                    <button type="submit" class="btn btn-danger btn-lg" id="add-to-cart-btn">
+                        Add To Cart
+                    </button>
+                </form>
 
             </div>
 
@@ -127,6 +129,8 @@ const quantity = document.getElementById("quantity");
 let currentPrice = buttons.length
     ? parseFloat(buttons[0].dataset.price)
     : 0;
+
+let selectedVariantId = buttons.length ? buttons[0].dataset.id : null;
 
 // Update total
 function updateTotal() {
@@ -157,6 +161,8 @@ buttons.forEach(button => {
 
         // Update total
         updateTotal();
+        // update selected variant id
+        selectedVariantId = this.dataset.id;
 
     });
 
@@ -173,6 +179,26 @@ if (buttons.length) {
 
 // Calculate initial total
 updateTotal();
+
+// Update hidden form quantity and form action before submit
+const addToCartForm = document.getElementById('add-to-cart-form');
+const formQuantity = document.getElementById('form-quantity');
+
+addToCartForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const qty = parseInt(quantity.value) || 1;
+    formQuantity.value = qty;
+
+    if (!selectedVariantId) {
+        alert('Please select a product variant.');
+        return;
+    }
+
+    // construct add-to-cart URL (orders app is included at root)
+    this.action = '/add-to-cart/' + selectedVariantId + '/';
+    this.submit();
+});
 </script>
 
 {% endblock %}

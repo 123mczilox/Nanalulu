@@ -1,0 +1,91 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Checkout</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <form method="POST" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Recipient Name</label>
+                    <input type="text" name="recipient_name" class="form-control" required value="{{ recipient_name|default:'' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" name="phone_number" class="form-control" required value="{{ phone_number|default:'' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Address</label>
+                    <textarea name="delivery_address" class="form-control" rows="4" required>{{ delivery_address|default:'' }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Payment Method</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pm-mpesa" value="mpesa" {% if payment_method == 'mpesa' %}checked{% endif %}>
+                        <label class="form-check-label" for="pm-mpesa">M-Pesa</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pm-card" value="card" {% if payment_method == 'card' %}checked{% endif %}>
+                        <label class="form-check-label" for="pm-card">Credit / Debit Card</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="pm-cod" value="cash" {% if payment_method == 'cash' %}checked{% endif %}>
+                        <label class="form-check-label" for="pm-cod">Cash on Delivery</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Place Order</button>
+
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <h4>Order Summary</h4>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th class="text-center">Volume</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.variant.product.name }}</td>
+                            <td class="text-center">{{ item.variant.volume }}</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end">KSh {{ item.variant.price }}</td>
+                            <td class="text-end">KSh {{ item.total_price }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Total</th>
+                            <th class="text-end">KSh {{ total }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

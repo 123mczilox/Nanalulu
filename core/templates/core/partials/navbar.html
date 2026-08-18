@@ -31,21 +31,21 @@
 
             <ul class="navbar-nav align-items-center">
                 <li class="nav-item">
-                    <a class="nav-link" href="#"><i class="bi bi-search fs-5"></i></a>
+                    <a class="nav-link" href="{% url 'shop' %}"><i class="bi bi-search fs-5"></i></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link position-relative" href="#">
+                    <a class="nav-link position-relative" href="{% url 'orders:cart' %}">
                         <i class="bi bi-cart3 fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ cart_item_count|default:0 }}</span>
                     </a>
                 </li>
 
                 {% if user.is_authenticated %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">{{ user.username }}</a>
+                    <a class="nav-link dropdown-toggle" href="{% url 'profile' %}" role="button" data-bs-toggle="dropdown">{{ user.username }}</a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                        <li><a class="dropdown-item" href="#">My Orders</a></li>
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">My Orders</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Logout</a></li>
                     </ul>
