@@ -1,8 +1,14 @@
+import json
+
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
 from products.models import ProductVariant
+
 from .models import Cart, CartItem, Order, OrderItem, Payment
+from .mpesa import send_stk_push
 # Create your views here.
 
 def get_or_create_cart(request):
@@ -250,8 +256,7 @@ def checkout(request):
                 order.total_amount = total
                 order.save()
 
-                # Create Payment record (pending)
-                Payment.objects.create(
+                payment = Payment.objects.create(
                     order=order,
                     payment_method=payment_method,
                     transaction_id=None,
@@ -259,12 +264,41 @@ def checkout(request):
                     status="pending",
                 )
 
+                if payment_method == "mpesa":
+                    try:
+                        response = send_stk_push(
+                            phone_number=phone_number,
+                            amount=int(order.total_amount),
+                            account_reference=f"Order {order.order_number}",
+                        )
+                        checkout_request_id = response.get("CheckoutRequestID")
+                        if checkout_request_id:
+                            payment.transaction_id = checkout_request_id
+                            payment.save(update_fields=["transaction_id"])
+                        messages.success(
+                            request,
+                            "M-Pesa payment request sent to your phone. Please complete the prompt.",
+                        )
+                    except ValueError as exc:
+                        payment.status = "failed"
+                        payment.save(update_fields=["status"])
+                        messages.error(request, str(exc))
+                        return render(request, "core/checkout.html", {"cart": cart, "items": items})
+                    except Exception:
+                        payment.status = "failed"
+                        payment.save(update_fields=["status"])
+                        messages.error(request, "M-Pesa payment request failed. Please try again.")
+                        return render(request, "core/checkout.html", {"cart": cart, "items": items})
+
                 # Clear cart items only after successful creation
                 cart.items.all().delete()
 
         except Exception:
             messages.error(request, "An error occurred while creating your order. Please try again.")
             return render(request, "core/checkout.html", {"cart": cart, "items": items})
+
+        if payment_method == "mpesa":
+            return redirect("orders:checkout_success", order_number=order.order_number)
 
         messages.success(request, "Order placed. Proceed to payment.")
         return redirect("orders:checkout_success", order_number=order.order_number)
@@ -278,6 +312,29 @@ def checkout(request):
     }
 
     return render(request, "core/checkout.html", context)
+
+# --------------------mpesa callback view------------------------
+@csrf_exempt
+def mpesa_callback(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (TypeError, ValueError):
+        return JsonResponse({"ResultCode": 1, "ResultDesc": "Invalid payload"}, status=400)
+
+    stk_callback = payload.get("Body", {}).get("stkCallback", {})
+    result_code = stk_callback.get("ResultCode")
+    checkout_request_id = stk_callback.get("CheckoutRequestID")
+
+    payment = Payment.objects.filter(transaction_id=checkout_request_id).first()
+    if payment:
+        payment.status = "successful" if result_code == 0 else "failed"
+        payment.save(update_fields=["status"])
+
+        payment.order.payment_status = "paid" if result_code == 0 else "failed"
+        payment.order.status = "confirmed" if result_code == 0 else "cancelled"
+        payment.order.save(update_fields=["payment_status", "status"])
+
+    return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"}, status=200)
 
 
 def checkout_success(request, order_number):

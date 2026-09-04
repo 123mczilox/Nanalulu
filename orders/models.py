@@ -91,12 +91,12 @@ class Order(models.Model):
         related_name="orders",
     )
 
-    cart = models.OneToOneField(
+    cart = models.ForeignKey(
         Cart,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="order",
+        related_name="orders",
     )
 
     order_number = models.CharField(
