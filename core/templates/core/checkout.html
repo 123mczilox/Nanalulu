@@ -37,8 +37,8 @@
                         <label class="form-check-label" for="pm-mpesa">M-Pesa</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="payment_method" id="pm-card" value="card" {% if payment_method == 'card' %}checked{% endif %}>
-                        <label class="form-check-label" for="pm-card">Credit / Debit Card</label>
+                        <input class="form-check-input" type="radio" name="payment_method" id="pm-card" value="card" disabled>
+                        <label class="form-check-label text-muted" for="pm-card">Credit / Debit Card (unavailable)</label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="payment_method" id="pm-cod" value="cash" {% if payment_method == 'cash' %}checked{% endif %}>

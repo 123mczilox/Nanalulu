@@ -1,0 +1,85 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ order.order_number }} | Nana Lulu{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <a href="{% url 'orders:order_history' %}" class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left me-1"></i>Back to My Orders
+            </a>
+            <h1 class="section-title mt-2 mb-1">{{ order.order_number }}</h1>
+            <p class="text-muted mb-0">Placed {{ order.created_at|date:"d M Y, H:i" }}</p>
+        </div>
+        <div class="text-md-end">
+            <span class="badge fs-6 {% if order.status == 'completed' %}text-bg-success{% elif order.status == 'cancelled' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">
+                {{ order.status|capfirst }}
+            </span>
+            <div class="mt-2 fw-semibold">KSh {{ order.total_amount }}</div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <section class="border rounded bg-white shadow-sm">
+                <div class="p-3 border-bottom">
+                    <h2 class="h5 mb-0">Items</h2>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-end">Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ item.variant.product.name }}</div>
+                                    <small class="text-muted">{{ item.variant.volume }}</small>
+                                </td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end">KSh {{ item.price }}</td>
+                                <td class="text-end">KSh {{ item.subtotal }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Total</th>
+                                <th class="text-end">KSh {{ order.total_amount }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-4">
+            <section class="border rounded bg-light p-4 mb-4">
+                <h2 class="h5 mb-3">Payment</h2>
+                <p class="mb-2"><strong>Method:</strong> {{ order.payment.get_payment_method_display }}</p>
+                <p class="mb-2"><strong>Status:</strong> {{ order.payment.status|capfirst }}</p>
+                {% if order.payment.mpesa_receipt_number %}
+                    <p class="mb-2"><strong>M-Pesa Receipt:</strong> {{ order.payment.mpesa_receipt_number }}</p>
+                {% endif %}
+                {% if order.payment.paid_at %}
+                    <p class="mb-0"><strong>Paid:</strong> {{ order.payment.paid_at|date:"d M Y, H:i" }}</p>
+                {% endif %}
+            </section>
+
+            <section class="border rounded bg-light p-4">
+                <h2 class="h5 mb-3">Delivery Details</h2>
+                <p class="mb-2"><strong>Recipient:</strong> {{ order.recipient_name }}</p>
+                <p class="mb-2"><strong>Phone:</strong> {{ order.phone_number }}</p>
+                <p class="mb-0"><strong>Address:</strong><br>{{ order.delivery_address }}</p>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

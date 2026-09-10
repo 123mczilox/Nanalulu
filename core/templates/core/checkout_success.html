@@ -13,7 +13,10 @@
             <p><strong>Phone:</strong> {{ order.phone_number }}</p>
             <p><strong>Delivery Address:</strong><br>{{ order.delivery_address }}</p>
             <p><strong>Payment Method:</strong> {% if order.payment %}{{ order.payment.get_payment_method_display }}{% else %}N/A{% endif %}</p>
-            <p><strong>Payment Status:</strong> {% if order.payment %}{{ order.payment.status|capfirst }}{% else %}N/A{% endif %}</p>
+            <p><strong>Payment Status:</strong> <span id="payment-status">{% if order.payment %}{{ order.payment.status|capfirst }}{% else %}N/A{% endif %}</span></p>
+            <p id="receipt-row"{% if not order.payment.mpesa_receipt_number %} style="display: none;"{% endif %}>
+                <strong>M-Pesa Receipt:</strong> <span id="receipt-number">{{ order.payment.mpesa_receipt_number }}</span>
+            </p>
         </div>
 
         <div class="col-md-6">
@@ -49,12 +52,71 @@
         </div>
     </div>
 
-    {% if order.payment.status != 'successful' %}
-        <div class="alert alert-warning mt-4">
-            Payment status: <strong>{{ order.payment.status|capfirst }}</strong>. Payment integration not implemented yet.
+    {% if order.payment.status == 'pending' and order.payment.payment_method == 'mpesa' %}
+        <div id="payment-alert" class="alert alert-info mt-4" role="status">
+            M-Pesa payment is pending. Complete the prompt on your phone; this page will update automatically.
+        </div>
+    {% elif order.payment.status == 'successful' %}
+        <div id="payment-alert" class="alert alert-success mt-4" role="status">
+            Payment successful. Your order is confirmed.
+        </div>
+    {% elif order.payment.status == 'failed' %}
+        <div id="payment-alert" class="alert alert-danger mt-4" role="status">
+            Payment was not completed. Please contact us if money was deducted.
         </div>
     {% endif %}
 
+    {% if user.is_authenticated and order.user_id == user.id %}
+        <a href="{% url 'orders:order_detail' order_number=order.order_number %}" class="btn btn-dark me-2">
+            <i class="bi bi-receipt me-1"></i>View Order Details
+        </a>
+    {% endif %}
     <a href="{% url 'shop' %}" class="btn btn-primary">Continue Shopping</a>
 </div>
+
+{% if order.payment.status == 'pending' and order.payment.payment_method == 'mpesa' %}
+<script>
+    (() => {
+        const statusUrl = "{% url 'orders:payment_status' order_number=order.order_number %}";
+        const statusElement = document.getElementById("payment-status");
+        const alertElement = document.getElementById("payment-alert");
+        const receiptRow = document.getElementById("receipt-row");
+        const receiptElement = document.getElementById("receipt-number");
+
+        const refreshPaymentStatus = async () => {
+            try {
+                const response = await fetch(statusUrl, {
+                    headers: {"X-Requested-With": "XMLHttpRequest"},
+                });
+                if (!response.ok) return;
+
+                const payment = await response.json();
+                statusElement.textContent = payment.status.charAt(0).toUpperCase() + payment.status.slice(1);
+
+                if (payment.status === "successful") {
+                    alertElement.className = "alert alert-success mt-4";
+                    alertElement.textContent = "Payment successful. Your order is confirmed.";
+                    if (payment.receipt_number) {
+                        receiptElement.textContent = payment.receipt_number;
+                        receiptRow.style.display = "block";
+                    }
+                    return;
+                }
+
+                if (payment.status === "failed") {
+                    alertElement.className = "alert alert-danger mt-4";
+                    alertElement.textContent = "Payment was not completed. Please contact us if money was deducted.";
+                    return;
+                }
+
+                window.setTimeout(refreshPaymentStatus, 2000);
+            } catch (error) {
+                window.setTimeout(refreshPaymentStatus, 3000);
+            }
+        };
+
+        window.setTimeout(refreshPaymentStatus, 2000);
+    })();
+</script>
+{% endif %}
 {% endblock %}

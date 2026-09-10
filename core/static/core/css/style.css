@@ -1,8 +1,62 @@
 body{
     color:#090b0c;
     font-family: 'Inter', sans-serif;
-    /* background-color: #cc9018; */
     margin:0;
+    background: #f7f4ef;
+}
+
+.auth-page {
+    min-height: calc(100vh - 86px);
+    display: flex;
+    align-items: center;
+    padding: 5rem 0;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.72), rgba(247,244,239,.92)),
+        url("../images/hero.jpg") center / cover;
+}
+
+.auth-card {
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(17,17,17,.08);
+    border-radius: 18px;
+    padding: clamp(1.5rem, 4vw, 2.75rem);
+    box-shadow: 0 1.5rem 4rem rgba(17,17,17,.12);
+}
+
+.auth-card__header {
+    margin-bottom: 2rem;
+}
+
+.auth-form .form-label {
+    color: #1f1f1f;
+    font-weight: 600;
+}
+
+.auth-form .form-control {
+    min-height: 3.1rem;
+    border-color: #d9d4cc;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+.auth-form .form-control:focus {
+    border-color: #c62828;
+    box-shadow: 0 0 0 .2rem rgba(198,40,40,.14);
+}
+
+.auth-switch {
+    margin-top: 1.5rem;
+    font-size: .95rem;
+}
+
+.auth-switch a {
+    color: #c62828;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
 }
 
 .hero-section{

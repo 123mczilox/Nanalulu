@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 from .forms import RegistrationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -11,8 +11,9 @@ def register(request):
         form = RegistrationForm(request.POST)
 
         if form.is_valid():
-            form.save()
-            return redirect("login")
+            user = form.save()
+            login(request, user)
+            return redirect("profile")
 
     else:
         form = RegistrationForm()
@@ -41,15 +42,27 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("/")
+            return redirect(
+                request.POST.get("next") or request.GET.get("next") or "profile"
+            )
 
         messages.error(request, "Invalid username or password.")
 
     return render(request, "accounts/login.html")
 
 def logout_view(request):
-    return HttpResponse("Logout Page")
+    if request.method == "POST":
+        logout(request)
+    return redirect("home")
 
 
+@login_required
 def profile(request):
-    return HttpResponse("Profile Page")
+    orders = request.user.orders.select_related("payment").order_by("-created_at")
+    context = {
+        "orders": orders[:5],
+        "order_count": orders.count(),
+        "pending_count": orders.filter(payment_status="pending").count(),
+        "paid_count": orders.filter(payment_status="paid").count(),
+    }
+    return render(request, "accounts/profile.html", context)

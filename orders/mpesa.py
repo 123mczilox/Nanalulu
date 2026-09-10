@@ -6,6 +6,14 @@ from django.conf import settings
 
 
 def get_mpesa_access_token():
+    required_settings = (
+        "MPESA_CONSUMER_KEY",
+        "MPESA_CONSUMER_SECRET",
+    )
+    missing_settings = [name for name in required_settings if not getattr(settings, name, None)]
+    if missing_settings:
+        raise ValueError(f"Missing M-Pesa settings: {', '.join(missing_settings)}")
+
     credentials = (
         f"{settings.MPESA_CONSUMER_KEY}:"
         f"{settings.MPESA_CONSUMER_SECRET}"
@@ -15,7 +23,7 @@ def get_mpesa_access_token():
         credentials.encode()
     ).decode()
 
-    url = "https://sandbox.safaricom.co.ke/oauth/v1/generate"
+    url = f"{settings.MPESA_API_BASE_URL}/oauth/v1/generate"
 
     headers = {
         "Authorization": f"Basic {encoded_credentials}",
@@ -39,6 +47,9 @@ def get_mpesa_access_token():
 
 
 def generate_mpesa_password():
+    if not settings.MPESA_SHORTCODE or not settings.MPESA_PASSKEY:
+        raise ValueError("MPESA_SHORTCODE and MPESA_PASSKEY must be configured.")
+
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     data_to_encode = (
@@ -78,7 +89,7 @@ def send_stk_push(phone_number, amount, account_reference):
 
     password, timestamp = generate_mpesa_password()
 
-    url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+    url = f"{settings.MPESA_API_BASE_URL}/mpesa/stkpush/v1/processrequest"
 
     payload = {
         "BusinessShortCode": settings.MPESA_SHORTCODE,
@@ -105,8 +116,6 @@ def send_stk_push(phone_number, amount, account_reference):
         headers=headers,
         timeout=30,
     )
-    print(response.text)
-
     response.raise_for_status()
 
     return response.json()

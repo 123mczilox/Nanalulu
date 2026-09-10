@@ -1,10 +1,14 @@
 import json
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from products.models import ProductVariant
 
 from .models import Cart, CartItem, Order, OrderItem, Payment
@@ -201,7 +205,7 @@ def checkout(request):
         if not delivery_address:
             errors.append("Delivery address is required.")
 
-        valid_methods = {"mpesa", "card", "cash"}
+        valid_methods = {"mpesa", "cash"}
         if payment_method not in valid_methods:
             errors.append("Please select a valid payment method.")
 
@@ -241,16 +245,27 @@ def checkout(request):
 
                 total = 0
                 for ci in items:
-                    # use current DB values for price
-                    price = ci.variant.price
+                    variant = ProductVariant.objects.select_for_update().get(
+                        pk=ci.variant_id
+                    )
+
+                    if not variant.is_available or ci.quantity > variant.stock_quantity:
+                        raise ValueError(
+                            f"Only {variant.stock_quantity} units of "
+                            f"{variant.product.name} ({variant.volume}) are available."
+                        )
+
+                    price = variant.price
                     subtotal = price * ci.quantity
                     OrderItem.objects.create(
                         order=order,
-                        variant=ci.variant,
+                        variant=variant,
                         price=price,
                         quantity=ci.quantity,
                         subtotal=subtotal,
                     )
+                    variant.stock_quantity -= ci.quantity
+                    variant.save(update_fields=["stock_quantity", "updated_at"])
                     total += subtotal
 
                 order.total_amount = total
@@ -279,28 +294,36 @@ def checkout(request):
                             request,
                             "M-Pesa payment request sent to your phone. Please complete the prompt.",
                         )
-                    except ValueError as exc:
-                        payment.status = "failed"
-                        payment.save(update_fields=["status"])
-                        messages.error(request, str(exc))
-                        return render(request, "core/checkout.html", {"cart": cart, "items": items})
                     except Exception:
-                        payment.status = "failed"
-                        payment.save(update_fields=["status"])
-                        messages.error(request, "M-Pesa payment request failed. Please try again.")
-                        return render(request, "core/checkout.html", {"cart": cart, "items": items})
+                        raise RuntimeError(
+                            "M-Pesa payment request failed. Please try again."
+                        )
 
                 # Clear cart items only after successful creation
                 cart.items.all().delete()
 
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return render(request, "core/checkout.html", {"cart": cart, "items": items})
+        except RuntimeError as exc:
+            messages.error(request, str(exc))
+            return render(request, "core/checkout.html", {"cart": cart, "items": items})
         except Exception:
-            messages.error(request, "An error occurred while creating your order. Please try again.")
+            messages.error(
+                request,
+                "An error occurred while creating your order. Please try again.",
+            )
             return render(request, "core/checkout.html", {"cart": cart, "items": items})
 
         if payment_method == "mpesa":
             return redirect("orders:checkout_success", order_number=order.order_number)
 
-        messages.success(request, "Order placed. Proceed to payment.")
+        messages.success(
+            request,
+            "Order placed. We will contact you to confirm cash-on-delivery details."
+            if payment_method == "cash"
+            else "Order placed successfully.",
+        )
         return redirect("orders:checkout_success", order_number=order.order_number)
 
     total = sum(item.total_price for item in items)
@@ -315,6 +338,7 @@ def checkout(request):
 
 # --------------------mpesa callback view------------------------
 @csrf_exempt
+@require_POST
 def mpesa_callback(request):
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -324,20 +348,122 @@ def mpesa_callback(request):
     stk_callback = payload.get("Body", {}).get("stkCallback", {})
     result_code = stk_callback.get("ResultCode")
     checkout_request_id = stk_callback.get("CheckoutRequestID")
+    callback_metadata = stk_callback.get("CallbackMetadata", {}).get("Item", [])
+    callback_amount = next(
+        (
+            item.get("Value")
+            for item in callback_metadata
+            if item.get("Name") == "Amount"
+        ),
+        None,
+    )
+    mpesa_receipt_number = next(
+        (
+            item.get("Value")
+            for item in callback_metadata
+            if item.get("Name") == "MpesaReceiptNumber"
+        ),
+        None,
+    )
 
-    payment = Payment.objects.filter(transaction_id=checkout_request_id).first()
-    if payment:
-        payment.status = "successful" if result_code == 0 else "failed"
-        payment.save(update_fields=["status"])
+    with transaction.atomic():
+        payment = (
+            Payment.objects.select_for_update()
+            .select_related("order")
+            .filter(transaction_id=checkout_request_id)
+            .first()
+        )
+        if payment and payment.status == "pending":
+            if result_code == 0:
+                try:
+                    callback_amount = Decimal(str(callback_amount))
+                except (InvalidOperation, TypeError):
+                    callback_amount = None
 
-        payment.order.payment_status = "paid" if result_code == 0 else "failed"
-        payment.order.status = "confirmed" if result_code == 0 else "cancelled"
-        payment.order.save(update_fields=["payment_status", "status"])
+                if callback_amount != payment.amount:
+                    return JsonResponse(
+                        {"ResultCode": 1, "ResultDesc": "Payment amount mismatch"},
+                        status=400,
+                    )
+
+                payment.status = "successful"
+                payment.paid_at = timezone.now()
+                payment.mpesa_receipt_number = mpesa_receipt_number
+                payment.save(
+                    update_fields=[
+                        "status",
+                        "paid_at",
+                        "mpesa_receipt_number",
+                        "updated_at",
+                    ]
+                )
+
+                payment.order.payment_status = "paid"
+                payment.order.status = "confirmed"
+                payment.order.save(update_fields=["payment_status", "status", "updated_at"])
+            else:
+                for item in payment.order.items.select_related("variant"):
+                    variant = ProductVariant.objects.select_for_update().get(
+                        pk=item.variant_id
+                    )
+                    variant.stock_quantity += item.quantity
+                    variant.save(update_fields=["stock_quantity", "updated_at"])
+
+                payment.status = "failed"
+                payment.save(update_fields=["status", "updated_at"])
+                payment.order.payment_status = "failed"
+                payment.order.status = "cancelled"
+                payment.order.save(update_fields=["payment_status", "status", "updated_at"])
 
     return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"}, status=200)
+
+
+def payment_status(request, order_number):
+    order = get_object_or_404(
+        Order.objects.select_related("payment", "cart"),
+        order_number=order_number,
+    )
+
+    if order.user_id:
+        if not request.user.is_authenticated or request.user.id != order.user_id:
+            return JsonResponse({"detail": "Not found."}, status=404)
+    elif order.cart and order.cart.session_key != request.session.session_key:
+        return JsonResponse({"detail": "Not found."}, status=404)
+
+    payment = order.payment
+    return JsonResponse(
+        {
+            "status": payment.status,
+            "receipt_number": payment.mpesa_receipt_number,
+            "order_status": order.status,
+        }
+    )
 
 
 def checkout_success(request, order_number):
     order = get_object_or_404(Order, order_number=order_number)
 
     return render(request, "core/checkout_success.html", {"order": order})
+
+
+@login_required
+def order_history(request):
+    orders = (
+        Order.objects.filter(user=request.user)
+        .select_related("payment")
+        .order_by("-created_at")
+    )
+
+    return render(request, "core/order_history.html", {"orders": orders})
+
+
+@login_required
+def order_detail(request, order_number):
+    order = get_object_or_404(
+        Order.objects.filter(user=request.user)
+        .select_related("payment")
+        .prefetch_related("items__variant__product"),
+        order_number=order_number,
+    )
+
+    return render(request, "core/order_detail.html", {"order": order})
