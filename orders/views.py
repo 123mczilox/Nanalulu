@@ -122,10 +122,12 @@ def cart(request):
 def update_cart_item(request, item_id):
 
     if request.method == "POST":
+        cart = get_or_create_cart(request)
 
         cart_item = get_object_or_404(
             CartItem,
-            id=item_id
+            id=item_id,
+            cart=cart,
         )
 
         quantity = int(request.POST.get("quantity", 1))

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72" role="img" aria-labelledby="title">
+  <title id="title">Liquor Store A</title>
+  <rect width="220" height="72" rx="8" fill="#111111"/>
+  <text x="110" y="34" fill="#ffffff" font-family="Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="1" text-anchor="middle">LIQUOR</text>
+  <text x="110" y="57" fill="#dc3545" font-family="Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="3" text-anchor="middle">STORE A</text>
+</svg>

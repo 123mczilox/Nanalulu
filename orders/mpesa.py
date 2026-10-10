@@ -102,7 +102,7 @@ def send_stk_push(phone_number, amount, account_reference):
         "PhoneNumber": normalized_phone,
         "CallBackURL": callback_url,
         "AccountReference": account_reference,
-        "TransactionDesc": "Nana Lulu Order",
+        "TransactionDesc": "Liquor Store A Order",
     }
 
     headers = {

@@ -144,7 +144,7 @@ class Order(models.Model):
 
             last_order = (
                 Order.objects
-                .filter(order_number__startswith=f"NNL-{year}-")
+                .filter(order_number__startswith=f"LSA-{year}-")
                 .order_by("-id")
                 .first()
             )
@@ -158,7 +158,7 @@ class Order(models.Model):
                 next_number = 1
 
             self.order_number = (
-                f"NNL-{year}-{next_number:05d}"
+                f"LSA-{year}-{next_number:05d}"
             )
 
         super().save(*args, **kwargs)

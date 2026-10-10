@@ -66,6 +66,58 @@ class CheckoutTestCase(TestCase):
         )
         return Order.objects.get()
 
+    def test_customer_cannot_update_another_customers_cart_item(self):
+        other_user = User.objects.create_user(username="other-cart-customer")
+        other_cart = Cart.objects.create(user=other_user)
+        other_item = CartItem.objects.create(
+            cart=other_cart,
+            variant=self.variant,
+            quantity=3,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("orders:update_cart_item", args=[other_item.id]),
+            {"quantity": 1},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        other_item.refresh_from_db()
+        self.assertEqual(other_item.quantity, 3)
+
+    def test_guest_cannot_update_another_carts_item(self):
+        guest_client = Client()
+        guest_client.get(reverse("orders:cart"))
+        guest_cart = Cart.objects.get(session_key=guest_client.session.session_key)
+        guest_item = CartItem.objects.create(
+            cart=guest_cart,
+            variant=self.variant,
+            quantity=1,
+        )
+
+        response = guest_client.post(
+            reverse("orders:update_cart_item", args=[self.cart_item.id]),
+            {"quantity": 1},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.cart_item.refresh_from_db()
+        self.assertEqual(self.cart_item.quantity, 2)
+        guest_item.refresh_from_db()
+        self.assertEqual(guest_item.quantity, 1)
+
+    def test_customer_can_update_their_own_cart_item(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("orders:update_cart_item", args=[self.cart_item.id]),
+            {"quantity": 4},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.cart_item.refresh_from_db()
+        self.assertEqual(self.cart_item.quantity, 4)
+
     def test_successful_mpesa_callback_marks_payment_paid(self):
         order = self.place_cash_order()
         payment = Payment.objects.get(order=order)

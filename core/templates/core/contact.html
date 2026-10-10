@@ -1,0 +1,83 @@
+{% extends "core/base.html" %}
+
+{% block title %}Contact | Liquor Store A{% endblock %}
+
+{% block content %}
+<main class="container py-5">
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-10">
+            <p class="section-tag mb-2">We're here to help</p>
+            <h1 class="section-title mb-3">Contact Liquor Store A</h1>
+            <p class="text-muted mb-0">
+                Get in touch with us about products, delivery, or an existing order.
+            </p>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}" role="status">{{ message }}</div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center g-4">
+        <div class="col-lg-5">
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-12">
+                    <section class="h-100 rounded bg-white p-4 shadow-sm">
+                        <h2 class="h5">Call us</h2>
+                        <p class="mb-0">
+                            <a href="tel:+254700000000">+254 700 000 000</a>
+                        </p>
+                    </section>
+                </div>
+                <div class="col-md-6 col-lg-12">
+                    <section class="h-100 rounded bg-white p-4 shadow-sm">
+                        <h2 class="h5">Email us</h2>
+                        <p class="mb-0">
+                            <a href="mailto:contact@example.com">contact@example.com</a>
+                        </p>
+                    </section>
+                </div>
+                <div class="col-md-6 col-lg-12">
+                    <section class="h-100 rounded bg-white p-4 shadow-sm">
+                        <h2 class="h5">Location</h2>
+                        <p class="mb-0">Nairobi, Kenya</p>
+                    </section>
+                </div>
+                <div class="col-md-6 col-lg-12">
+                    <section class="h-100 rounded bg-white p-4 shadow-sm">
+                        <h2 class="h5">Opening hours</h2>
+                        <p class="mb-1">Monday - Saturday: 8:00 AM - 10:00 PM</p>
+                        <p class="mb-0">Sunday: 10:00 AM - 8:00 PM</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <section class="h-100 rounded bg-white p-4 p-md-5 shadow-sm">
+                <h2 class="h4 mb-4">Send us a message</h2>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="form-text text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button class="btn btn-danger w-100 mt-2" type="submit">Send message</button>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+{% endblock %}

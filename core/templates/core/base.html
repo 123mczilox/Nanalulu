@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Nana Bistro{% endblock %}</title>
+    <title>{% block title %}Liquor Store A{% endblock %}</title>
     <!-- bootstrap CSS -->
      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
      <!-- bootsrap icons -->
@@ -15,16 +15,51 @@
 
 
 </head>
-<body>
-    {% include 'core/partials/navbar.html' %}
-    
-    {% block content %}
-    {% endblock %}
-    
-    {% include 'core/partials/footer.html' %}
-        
+<body class="age-gate-open">
+    <div
+        class="age-gate"
+        id="age-verification"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="age-verification-title"
+        aria-describedby="age-verification-description"
+    >
+        <div class="age-gate__card">
+            <p class="age-gate__eyebrow">Liquor Store A</p>
+            <h1 id="age-verification-title">Age verification</h1>
+            <p id="age-verification-description">
+                This website sells alcoholic beverages. Please confirm that you are at least 18 years old to continue.
+            </p>
+            <p
+                class="age-gate__denied"
+                id="age-verification-denied"
+                role="status"
+                hidden
+            >
+                Access denied. You must be at least 18 years old to enter this website.
+            </p>
+            <div class="age-gate__actions">
+                <button class="btn btn-danger" id="age-verification-confirm" type="button">
+                    I am 18 or older
+                </button>
+                <button class="btn btn-outline-secondary" id="age-verification-deny" type="button">
+                    I am under 18
+                </button>
+            </div>
+            <p class="age-gate__note">
+                Your confirmation is remembered in this browser.
+            </p>
+        </div>
+    </div>
 
-   
+    <main id="site-content" inert tabindex="-1">
+        {% include 'core/partials/navbar.html' %}
+
+        {% block content %}
+        {% endblock %}
+
+        {% include 'core/partials/footer.html' %}
+    </main>
 
     <!-- bootstrap JS -->
      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
